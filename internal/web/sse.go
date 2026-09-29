@@ -1,8 +1,10 @@
 package web
 
 import (
+	"bufio"
 	"fmt"
 	"net/http"
+	"strings"
 )
 
 func ServerSentEventHandler(hub *Hub) http.HandlerFunc {
@@ -13,12 +15,10 @@ func ServerSentEventHandler(hub *Hub) http.HandlerFunc {
 			return
 		}
 
-		//Mandatory SSE http response headers
+		// Mandatory SSE http response headers
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
-
-		// For nginx and stuff from bufferring the SSE events
 		w.Header().Set("X-Accel-Buffering", "no")
 
 		clientchan := make(chan Message, 16)
@@ -32,18 +32,20 @@ func ServerSentEventHandler(hub *Hub) http.HandlerFunc {
 		for {
 			select {
 			case <-ctx.Done():
-				// User Closed the tab or exited the browser
 				return
 			case msg, ok := <-clientchan:
 				if !ok {
-					//channel closed by hub
 					return
 				}
 
-				// SSE writing protocol format
-				// event: <event_name>\n
-				// data: <payload>\n\n
-				fmt.Fprintf(w, "event: %s\ndata: %s\n\n", msg.Event, msg.Data)
+				// SSE writing protocol:
+				// Each data line must be prefixed with "data: "
+				fmt.Fprintf(w, "event: %s\n", msg.Event)
+				scanner := bufio.NewScanner(strings.NewReader(msg.Data))
+				for scanner.Scan() {
+					fmt.Fprintf(w, "data: %s\n", scanner.Text())
+				}
+				fmt.Fprint(w, "\n\n")
 
 				flusher.Flush()
 			}

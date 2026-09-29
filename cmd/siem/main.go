@@ -60,14 +60,7 @@ func simulateIncomingAlerts(hub *web.Hub) {
 		scen := scenerios[rand.Intn(len(scenerios))]
 		timestamp := time.Now().Format("15:04:05")
 
-		rowHTML := fmt.Sprintf(`
-			<tr class="new-row">
-				<td>%s</td>
-				<td><span class="%s"> %s </span></td>
-				<td><code>%s</code></td>
-				<td>%s</td>
-				<td>%s</td>
-			</tr>`,
+		rowHTML := fmt.Sprintf(`<tr class="new-row"><td>%s</td><td><span class="%s">%s</span></td><td><code>%s</code></td><td>%s</td><td>%s</td></tr>`,
 			timestamp,
 			sev.Class,
 			sev.Level,

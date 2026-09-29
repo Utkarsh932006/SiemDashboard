@@ -30,6 +30,11 @@
         .new-row {
           animation: highlight 1.5s ease-out;
         }
+
+        /* Hide empty-state placeholder once real alert rows arrive */
+        tbody:has(tr:nth-child(2)) #empty-state {
+          display: none;
+        }
       </style>
     </head>
     <body>
