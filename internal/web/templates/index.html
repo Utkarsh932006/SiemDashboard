@@ -51,7 +51,7 @@
           <p><small>Streaming live security events via Server-Sent
   Events (SSE)</small></p>
 
-          <table role="grid">
+          <table role="grid" hx-ext="sse" sse-connect="/events/stream">
             <thead>
               <tr>
                 <th>Time</th>
@@ -61,22 +61,12 @@
                 <th>Message</th>
               </tr>
             </thead>
-            <!--
-              HTMX SSE connection:
-              - sse-connect="/events/stream" opens the SSE stream
-              - sse-swap="alert" listens for events named 'alert'
-              - hx-swap="afterbegin" inserts new rows at the top of
-  the table
-            -->
             <tbody
-              hx-ext="sse"
-              sse-connect="/events/stream"
               sse-swap="alert"
               hx-swap="afterbegin">
               <!-- Initial placeholder row -->
               <tr id="empty-state">
-                <td colspan="5" style="text-align: center; color:
-  #888;">
+                <td colspan="5" style="text-align: center; color: #888;">
                   Waiting for incoming security events...
                 </td>
               </tr>
