@@ -58,7 +58,7 @@ func simulateIncomingAlerts(hub *web.Hub) {
 	for range ticker.C {
 		sev := severities[rand.Intn(len(severities))]
 		scen := scenerios[rand.Intn(len(scenerios))]
-		timestamp := time.Now().Format("15:21:06")
+		timestamp := time.Now().Format("15:04:05")
 
 		rowHTML := fmt.Sprintf(`
 			<tr class="new-row">

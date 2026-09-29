@@ -1,0 +1,88 @@
+    <!DOCTYPE html>
+    <html lang="en" data-theme="dark">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-
+  scale=1.0">
+      <title>SIEM Security Dashboard</title>
+
+      <!-- Embedded static files (served by Go) -->
+      <link rel="stylesheet" href="/static/pico.min.css">
+      <script src="/static/htmx.min.js"></script>
+      <script src="/static/sse.js"></script>
+
+      <style>
+        /* Clean status badges */
+        .badge-critical { background: #b71c1c; color: #fff; padding:
+  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .badge-high     { background: #e65100; color: #fff; padding:
+  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .badge-medium   { background: #f57f17; color: #000; padding:
+  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .badge-info     { background: #0277bd; color: #fff; padding:
+  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+
+        /* Flash animation when new alert arrives */
+        @keyframes highlight {
+          from { background-color: rgba(255, 255, 255, 0.15); }
+          to   { background-color: transparent; }
+        }
+        .new-row {
+          animation: highlight 1.5s ease-out;
+        }
+      </style>
+    </head>
+    <body>
+      <main class="container">
+        <header style="margin-bottom: 2rem;">
+          <nav>
+            <ul>
+              <li><strong>SIEM Live Monitor</strong></li>
+            </ul>
+            <ul>
+              <li><span style="color: #4caf50;">● System
+  Online</span></li>
+            </ul>
+          </nav>
+        </header>
+
+        <section>
+          <h2>Real-Time Alert Feed</h2>
+          <p><small>Streaming live security events via Server-Sent
+  Events (SSE)</small></p>
+
+          <table role="grid">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Severity</th>
+                <th>Source IP</th>
+                <th>Event Type</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <!--
+              HTMX SSE connection:
+              - sse-connect="/events/stream" opens the SSE stream
+              - sse-swap="alert" listens for events named 'alert'
+              - hx-swap="afterbegin" inserts new rows at the top of
+  the table
+            -->
+            <tbody
+              hx-ext="sse"
+              sse-connect="/events/stream"
+              sse-swap="alert"
+              hx-swap="afterbegin">
+              <!-- Initial placeholder row -->
+              <tr id="empty-state">
+                <td colspan="5" style="text-align: center; color:
+  #888;">
+                  Waiting for incoming security events...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </body>
+    </html>
