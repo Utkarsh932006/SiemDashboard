@@ -19,7 +19,7 @@ func ServerSentEventHandler(hub *Hub) http.HandlerFunc {
 		w.Header().Set("Connection", "keep-alive")
 
 		// For nginx and stuff from bufferring the SSE events
-		w.Header().Set("X-Accel-Bufferring", "no")
+		w.Header().Set("X-Accel-Buffering", "no")
 
 		clientchan := make(chan Message, 16)
 		hub.register <- clientchan
