@@ -1,12 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"time"
 
+	"github.com/Utkarsh932006/SiemDashboard/internal/ingestion"
+	"github.com/Utkarsh932006/SiemDashboard/internal/parser"
 	"github.com/Utkarsh932006/SiemDashboard/internal/web"
 )
 
@@ -27,6 +30,18 @@ func main() {
 	if err := http.ListenAndServe(addr, server); err != nil {
 		log.Fatalf("Server exited wit error: %v", err)
 	}
+
+	// Creates a new UDP syslog reciever to test the working.
+	reciever := ingestion.NewReciever(":5140", 1024)
+	go reciever.Start(context.Background())
+
+	// Ingest loop:
+	go func() {
+		for raw := range reciever.Channel() {
+			event := parser.Parse(raw.Data, raw.RemoteIP)
+			fmt.Printf("Recieved [%s] %s: %s\n", event.Severity, event.EventType, event.Message)
+		}
+	}()
 }
 
 func simulateIncomingAlerts(hub *web.Hub) {

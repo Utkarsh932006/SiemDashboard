@@ -30,7 +30,7 @@ var facilities = []string{
 	"local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7",
 }
 
-func parse(raw string, remoteIP string) *Event {
+func Parse(raw string, remoteIP string) *Event {
 	raw = strings.TrimSpace(raw)
 	event := &Event{
 		Timestamp: time.Now(),

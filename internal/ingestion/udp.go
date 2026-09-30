@@ -28,6 +28,10 @@ func NewReciever(addr string, bufferSize int) *Reciever {
 }
 
 // Returns the recieve-only channel yielding incoming raw logs
+func (r *Reciever) Channel() <-chan RawLog {
+	return r.out
+}
+
 func (r *Reciever) Start(ctx context.Context) error {
 	udpaddr, err := net.ResolveUDPAddr("udp", r.addr)
 	if err != nil {
