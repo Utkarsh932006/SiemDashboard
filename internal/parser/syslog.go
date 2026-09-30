@@ -88,6 +88,43 @@ func parse(raw string, remoteIP string) *Event {
 	return event
 }
 
-func mapSyslogSeverity(code int) string
+func mapSyslogSeverity(code int) string {
+	switch code {
+	case 0, 1: // Emergency,  Alert
+		return SeverityCritical
+	case 2, 3: // Critical, Error
+		return SeverityHigh
+	case 4: //Warning
+		return SeverityMedium
+	case 5: // Notice
+		return SeverityLow
+	default: // Info, Debug
+		return SeverityInfo
+	}
+}
 
-func classifySecurityEvent(e *Event)
+func classifySecurityEvent(e *Event) {
+	lower := strings.ToLower(e.Message)
+
+	switch {
+	case strings.Contains(lower, "failed password") || strings.Contains(lower, "authentication failure"):
+		e.EventType = "AUTH_FAILURE"
+		e.Severity = SeverityHigh
+
+	case strings.Contains(lower, "accepted password") || strings.Contains(lower, "session opened"):
+		e.EventType = "AUTH_SUCCESS"
+		e.Severity = SeverityInfo
+
+	case strings.Contains(lower, "sudo:") && strings.Contains(lower, "command="):
+		e.EventType = "SUDO_EXEC"
+		e.Severity = SeverityMedium
+
+	case strings.Contains(lower, "port scan") || strings.Contains(lower, "syn flood"):
+		e.EventType = "PORT_SCAN"
+		e.Severity = SeverityHigh
+
+	case strings.Contains(lower, "drop") || strings.Contains(lower, "reject") || strings.Contains(lower, "block"):
+		e.EventType = "FIREWALL_DROP"
+		e.Severity = SeverityMedium
+	}
+}
