@@ -16,9 +16,7 @@ import (
 
 var (
 	// Matches RFC 3164 prefix: <PRI>MMM DD HH:MM:SS HOST PROGRAM[PID]: MESSAGE
-	// Example: <34>Oct 11 22:14:15 server01 sshd[1234]: Failed password for root from 192.168.1.105
-	syslogRegex = regexp.MustCompile(`^<(\d{1,3})>(?:([A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2})\s+)?([^\s:]+)?\s*([a-zA-Z0-9_\-]+)(?:\[\d+\])?:?\s*(.
-  *)$`)
+	syslogRegex = regexp.MustCompile(`^<(\d{1,3})>(?:([A-Z][a-z]{2}\s+\d+\s+\d{2}:\d{2}:\d{2})\s+)?([^\s:]+)?\s*([a-zA-Z0-9_\-]+)(?:\[\d+\])?:?\s*(.*)$`)
 
 	// Regex to extract IP addresses from within log message bodies (e.g., "from 192.168.1.50")
 	ipRegex = regexp.MustCompile(`\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b`)

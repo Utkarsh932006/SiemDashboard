@@ -25,15 +25,13 @@ func main() {
 		log.Fatalf("failed to initialize web server: %v", err)
 	}
 
-	addr := ":3000"
-	fmt.Printf("Siem Dashboard running on http://localhost%s\n", addr)
-	if err := http.ListenAndServe(addr, server); err != nil {
-		log.Fatalf("Server exited wit error: %v", err)
-	}
-
 	// Creates a new UDP syslog reciever to test the working.
 	reciever := ingestion.NewReciever(":5140", 1024)
-	go reciever.Start(context.Background())
+	go func() {
+		if err := reciever.Start(context.Background()); err != nil {
+			log.Printf("UDP listener error: %v", err)
+		}
+	}()
 
 	// Ingest loop:
 	go func() {
@@ -42,6 +40,13 @@ func main() {
 			fmt.Printf("Recieved [%s] %s: %s\n", event.Severity, event.EventType, event.Message)
 		}
 	}()
+
+	addr := ":3000"
+	fmt.Printf("Siem Dashboard running on http://localhost%s\n", addr)
+	fmt.Println("Syslog UDP listener listening on :5140")
+	if err := http.ListenAndServe(addr, server); err != nil {
+		log.Fatalf("Server exited wit error: %v", err)
+	}
 }
 
 func simulateIncomingAlerts(hub *web.Hub) {
