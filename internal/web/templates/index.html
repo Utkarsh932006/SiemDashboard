@@ -1,83 +1,733 @@
-    <!DOCTYPE html>
-    <html lang="en" data-theme="dark">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-
-  scale=1.0">
-      <title>SIEM Security Dashboard</title>
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SIEM // Security Operations Console</title>
 
-      <!-- Embedded static files (served by Go) -->
-      <link rel="stylesheet" href="/static/pico.min.css">
-      <script src="/static/htmx.min.js"></script>
-      <script src="/static/sse.js"></script>
+  <!-- Embedded Static Assets -->
+  <link rel="stylesheet" href="/static/pico.min.css">
+  <script src="/static/htmx.min.js"></script>
+  <script src="/static/sse.js"></script>
 
-      <style>
-        /* Clean status badges */
-        .badge-critical { background: #b71c1c; color: #fff; padding:
-  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-        .badge-high     { background: #e65100; color: #fff; padding:
-  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-        .badge-medium   { background: #f57f17; color: #000; padding:
-  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-        .badge-info     { background: #0277bd; color: #fff; padding:
-  2px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+  <style>
+    /* ==========================================================================
+       TACTICAL SOC THEME (Splunk / CrowdStrike / Elastic Inspired)
+       Palette: Deep Charcoal, Slate, Zinc, and High-Contrast Severity Accents.
+       NO PURPLE GRADIENTS. ZERO FLUFF.
+       ========================================================================== */
+    :root {
+      --bg-canvas: #090d16;
+      --bg-panel: #0f172a;
+      --bg-panel-hover: #172033;
+      --bg-card: #131c2e;
+      --border-subtle: #1e293b;
+      --border-focus: #334155;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
 
-        /* Flash animation when new alert arrives */
-        @keyframes highlight {
-          from { background-color: rgba(255, 255, 255, 0.15); }
-          to   { background-color: transparent; }
-        }
-        .new-row {
-          animation: highlight 1.5s ease-out;
-        }
+      /* Standard Security Severity Tokens */
+      --sev-crit-bg: #450a0a;
+      --sev-crit-text: #fecaca;
+      --sev-crit-border: #dc2626;
 
-        /* Hide empty-state placeholder once real alert rows arrive */
-        tbody:has(tr:nth-child(2)) #empty-state {
-          display: none;
-        }
-      </style>
-    </head>
-    <body>
-      <main class="container">
-        <header style="margin-bottom: 2rem;">
-          <nav>
-            <ul>
-              <li><strong>SIEM Live Monitor</strong></li>
-            </ul>
-            <ul>
-              <li><span style="color: #4caf50;">● System
-  Online</span></li>
-            </ul>
-          </nav>
-        </header>
+      --sev-high-bg: #431407;
+      --sev-high-text: #fed7aa;
+      --sev-high-border: #ea580c;
 
-        <section>
-          <h2>Real-Time Alert Feed</h2>
-          <p><small>Streaming live security events via Server-Sent
-  Events (SSE)</small></p>
+      --sev-med-bg: #3f2c06;
+      --sev-med-text: #fef08a;
+      --sev-med-border: #ca8a04;
 
-          <table role="grid" hx-ext="sse" sse-connect="/events/stream">
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Severity</th>
-                <th>Source IP</th>
-                <th>Event Type</th>
-                <th>Message</th>
-              </tr>
-            </thead>
-            <tbody
-              sse-swap="alert"
-              hx-swap="afterbegin">
-              <!-- Initial placeholder row -->
-              <tr id="empty-state">
-                <td colspan="5" style="text-align: center; color: #888;">
-                  Waiting for incoming security events...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </section>
-      </main>
-    </body>
-    </html>
+      --sev-low-bg: #082f49;
+      --sev-low-text: #bae6fd;
+      --sev-low-border: #0284c7;
+
+      --sev-info-bg: #1e293b;
+      --sev-info-text: #cbd5e1;
+      --sev-info-border: #475569;
+
+      --status-active: #22c55e;
+      --font-mono: ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-size: 0.9rem;
+      line-height: 1.4;
+      margin: 0;
+      padding: 0;
+    }
+
+    .soc-layout {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem;
+    }
+
+    /* Top Navigation / Status Header */
+    .soc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.85rem 1.25rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      margin-bottom: 1.25rem;
+    }
+
+    .soc-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .soc-brand .title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-main);
+    }
+
+    .soc-brand .subtitle {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      border-left: 1px solid var(--border-focus);
+      padding-left: 0.75rem;
+    }
+
+    .soc-telemetry-status {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--status-active);
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--status-active);
+      box-shadow: 0 0 6px var(--status-active);
+    }
+
+    .telemetry-tag {
+      color: var(--text-muted);
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      padding: 0.2rem 0.5rem;
+      border-radius: 3px;
+    }
+
+    .rules-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .telemetry-tag.interactive {
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .telemetry-tag.interactive:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-card);
+      color: var(--text-main);
+    }
+
+    .rules-popover {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      width: 330px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 4px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      padding: 0.75rem;
+      z-index: 100;
+      font-family: var(--font-mono);
+      text-align: left;
+    }
+
+    .rules-dropdown:hover .rules-popover {
+      display: block;
+      animation: popoverFade 0.15s ease-out;
+    }
+
+    @keyframes popoverFade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .rules-popover-header {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      padding-bottom: 0.45rem;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 0.45rem;
+    }
+
+    .rule-item {
+      padding: 0.45rem 0;
+      border-bottom: 1px solid #161f30;
+    }
+
+    .rule-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .rule-item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.2rem;
+    }
+
+    .rule-title {
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .rule-desc {
+      font-size: 0.69rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+    }
+
+    /* KPI Metrics Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .kpi-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .kpi-card .label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.35rem;
+    }
+
+    .kpi-card .value {
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-main);
+    }
+
+    .kpi-card.critical .value { color: var(--sev-crit-border); }
+    .kpi-card.high .value     { color: var(--sev-high-border); }
+    .kpi-card.medium .value   { color: var(--sev-med-border); }
+
+    /* Control Toolbar (Search, Filter, Actions) */
+    .toolbar-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 420px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 3px;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      padding: 0.45rem 0.75rem;
+      margin: 0;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.3rem 0.65rem;
+      border-radius: 3px;
+      cursor: pointer;
+      text-transform: uppercase;
+      margin: 0;
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+
+    .filter-btn:hover, .filter-btn.active {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border-color: var(--border-focus);
+    }
+
+    .action-btn {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      padding: 0.3rem 0.65rem;
+      border-radius: 3px;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    .action-btn:hover {
+      color: var(--text-main);
+      border-color: var(--border-focus);
+    }
+
+    /* Table Container */
+    .table-viewport {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 0 0 4px 4px;
+      overflow-x: auto;
+    }
+
+    table.soc-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      margin: 0;
+      text-align: left;
+    }
+
+    table.soc-table th {
+      background: #0b1120;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+
+    table.soc-table td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid #161f30;
+      vertical-align: middle;
+    }
+
+    table.soc-table tbody tr {
+      transition: background 0.12s ease;
+    }
+
+    table.soc-table tbody tr:hover {
+      background: var(--bg-panel-hover);
+    }
+
+    /* Severity Badges (Industrial, High-Contrast) */
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 0.18rem 0.5rem;
+      border-radius: 2px;
+      text-transform: uppercase;
+      line-height: 1.2;
+    }
+
+    .badge-critical {
+      background: var(--sev-crit-bg);
+      color: var(--sev-crit-text);
+      border: 1px solid var(--sev-crit-border);
+    }
+
+    .badge-high {
+      background: var(--sev-high-bg);
+      color: var(--sev-high-text);
+      border: 1px solid var(--sev-high-border);
+    }
+
+    .badge-medium {
+      background: var(--sev-med-bg);
+      color: var(--sev-med-text);
+      border: 1px solid var(--sev-med-border);
+    }
+
+    .badge-low {
+      background: var(--sev-low-bg);
+      color: var(--sev-low-text);
+      border: 1px solid var(--sev-low-border);
+    }
+
+    .badge-info {
+      background: var(--sev-info-bg);
+      color: var(--sev-info-text);
+      border: 1px solid var(--sev-info-border);
+    }
+
+    /* Monospace IP, Time & Rule formatting */
+    .cell-time {
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      white-space: nowrap;
+      font-size: 0.78rem;
+    }
+
+    .cell-ip {
+      font-family: var(--font-mono);
+      color: #93c5fd;
+      background: rgba(30, 41, 59, 0.6);
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      border: 1px solid #1e293b;
+      font-size: 0.78rem;
+    }
+
+    .cell-rule {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .cell-msg {
+      color: var(--text-main);
+      font-size: 0.8rem;
+      word-break: break-word;
+    }
+
+    /* Live Arrival Highlight Animation */
+    @keyframes alertHighlight {
+      0%   { background-color: rgba(220, 38, 38, 0.25); }
+      100% { background-color: transparent; }
+    }
+
+    .new-row {
+      animation: alertHighlight 1.8s ease-out forwards;
+    }
+
+    /* Empty State */
+    #empty-state td {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    tbody:has(tr:nth-child(2)) #empty-state {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="soc-layout">
+    
+    <!-- Top System Header -->
+    <header class="soc-header">
+      <div class="soc-brand">
+        <span class="title">SIEM Core Console</span>
+        <span class="subtitle">Threat Detection & Correlation</span>
+      </div>
+
+      <div class="soc-telemetry-status">
+        <div class="status-indicator">
+          <span class="status-dot"></span>
+          <span>STREAM ONLINE</span>
+        </div>
+        <div class="telemetry-tag">UDP :5140 LISTENER</div>
+        <div class="rules-dropdown">
+          <div class="telemetry-tag interactive">
+            <span>DETECTION RULES (3)</span>
+            <span style="font-size: 0.6rem; color: var(--text-dim);">▼</span>
+          </div>
+          <div class="rules-popover">
+            <div class="rules-popover-header">ACTIVE CORRELATION RULES</div>
+            <div class="rule-item">
+              <div class="rule-item-top">
+                <span class="rule-title">SSH Brute Force</span>
+                <span class="badge badge-critical">CRITICAL</span>
+              </div>
+              <div class="rule-desc">5 AUTH_FAILURE events from same IP within 60s</div>
+            </div>
+            <div class="rule-item">
+              <div class="rule-item-top">
+                <span class="rule-title">Port Scan Activity</span>
+                <span class="badge badge-high">HIGH</span>
+              </div>
+              <div class="rule-desc">10 PORT_SCAN probes from same IP within 30s</div>
+            </div>
+            <div class="rule-item">
+              <div class="rule-item-top">
+                <span class="rule-title">Suspicious Sudo</span>
+                <span class="badge badge-high">HIGH</span>
+              </div>
+              <div class="rule-desc">3 SUDO_EXEC events from same IP within 15s</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Operational KPI Grid -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <span class="label">Total Incidents</span>
+        <span class="value" id="kpi-total">0</span>
+      </div>
+      <div class="kpi-card critical">
+        <span class="label">Critical Attacks</span>
+        <span class="value" id="kpi-critical">0</span>
+      </div>
+      <div class="kpi-card high">
+        <span class="label">High Alerts</span>
+        <span class="value" id="kpi-high">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="label">Targeted / Source IPs</span>
+        <span class="value" id="kpi-sources">0</span>
+      </div>
+    </section>
+
+    <!-- Controls & Alert Feed Table -->
+    <section>
+      <div class="toolbar-panel">
+        <div class="search-box">
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search by IP, Rule ID, or Payload..." 
+            onkeyup="filterTable()">
+        </div>
+
+        <div class="filter-group">
+          <button class="filter-btn active" onclick="setSeverityFilter('ALL', this)">All</button>
+          <button class="filter-btn" onclick="setSeverityFilter('CRITICAL', this)">Critical</button>
+          <button class="filter-btn" onclick="setSeverityFilter('HIGH', this)">High</button>
+          <button class="filter-btn" onclick="setSeverityFilter('MEDIUM', this)">Medium</button>
+        </div>
+
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="action-btn" id="pauseBtn" onclick="toggleStream()">Pause Feed</button>
+          <button class="action-btn" onclick="clearTable()">Clear</button>
+        </div>
+      </div>
+
+      <div class="table-viewport">
+        <!-- 
+          HTMX SSE Connection:
+          Subscribes to /events/stream and prepends alert rows
+        -->
+        <table class="soc-table" role="grid" hx-ext="sse" sse-connect="/events/stream">
+          <thead>
+            <tr>
+              <th style="width: 95px;">Timestamp</th>
+              <th style="width: 90px;">Severity</th>
+              <th style="width: 150px;">Source IP</th>
+              <th style="width: 220px;">Detection Rule</th>
+              <th>Incident Summary</th>
+            </tr>
+          </thead>
+          <tbody 
+            id="alertTableBody"
+            sse-swap="alert" 
+            hx-swap="afterbegin">
+            
+            <tr id="empty-state">
+              <td colspan="5">
+                [NO ALERTS DETECTED] Awaiting Syslog telemetry on UDP port 5140...
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // Tactical UX Helpers: Live KPIs, Table Filtering & Stream Controls
+    // =========================================================================
+    let totalAlerts = 0;
+    let criticalAlerts = 0;
+    let highAlerts = 0;
+    const uniqueSources = new Set();
+    let currentSeverityFilter = 'ALL';
+    let isPaused = false;
+
+    // Track incoming rows and update live KPI counters
+    const tableBody = document.getElementById('alertTableBody');
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1 && node.tagName === 'TR' && node.id !== 'empty-state') {
+            if (isPaused) {
+              node.remove();
+              return;
+            }
+
+            totalAlerts++;
+            document.getElementById('kpi-total').textContent = totalAlerts;
+
+            // Extract severity
+            const sevBadge = node.querySelector('.badge, [class*="badge-"]');
+            if (sevBadge) {
+              const sev = sevBadge.textContent.trim().toUpperCase();
+              if (sev.includes('CRITICAL')) {
+                criticalAlerts++;
+                document.getElementById('kpi-critical').textContent = criticalAlerts;
+              } else if (sev.includes('HIGH')) {
+                highAlerts++;
+                document.getElementById('kpi-high').textContent = highAlerts;
+              }
+            }
+
+            // Extract Source IP
+            const ipCode = node.querySelector('.cell-ip, code');
+            if (ipCode) {
+              uniqueSources.add(ipCode.textContent.trim());
+              document.getElementById('kpi-sources').textContent = uniqueSources.size;
+            }
+
+            // Apply active filters to the new row
+            applyFilterToRow(node);
+          }
+        });
+      });
+    });
+
+    observer.observe(tableBody, { childList: true });
+
+    // Client-side text search across all columns
+    function filterTable() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const rows = tableBody.getElementsByTagName('tr');
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (row.id === 'empty-state') continue;
+        const text = row.innerText.toLowerCase();
+        const matchesSearch = text.includes(query);
+        const matchesSeverity = checkRowSeverity(row, currentSeverityFilter);
+
+        row.style.display = (matchesSearch && matchesSeverity) ? '' : 'none';
+      }
+    }
+
+    // Severity filter buttons
+    function setSeverityFilter(sev, btn) {
+      currentSeverityFilter = sev;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filterTable();
+    }
+
+    function checkRowSeverity(row, filter) {
+      if (filter === 'ALL') return true;
+      const badge = row.querySelector('.badge, [class*="badge-"]');
+      return badge && badge.textContent.trim().toUpperCase() === filter;
+    }
+
+    function applyFilterToRow(row) {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const text = row.innerText.toLowerCase();
+      const matchesSearch = text.includes(query);
+      const matchesSeverity = checkRowSeverity(row, currentSeverityFilter);
+
+      row.style.display = (matchesSearch && matchesSeverity) ? '' : 'none';
+    }
+
+    // Toggle Pause/Resume Live Feed
+    function toggleStream() {
+      isPaused = !isPaused;
+      const btn = document.getElementById('pauseBtn');
+      if (isPaused) {
+        btn.textContent = 'Resume Feed';
+        btn.style.color = '#ef4444';
+        btn.style.borderColor = '#ef4444';
+      } else {
+        btn.textContent = 'Pause Feed';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }
+    }
+
+    // Clear feed
+    function clearTable() {
+      const rows = Array.from(tableBody.querySelectorAll('tr:not(#empty-state)'));
+      rows.forEach(r => r.remove());
+      totalAlerts = 0;
+      criticalAlerts = 0;
+      highAlerts = 0;
+      uniqueSources.clear();
+      document.getElementById('kpi-total').textContent = '0';
+      document.getElementById('kpi-critical').textContent = '0';
+      document.getElementById('kpi-high').textContent = '0';
+      document.getElementById('kpi-sources').textContent = '0';
+    }
+  </script>
+
+</body>
+</html>
