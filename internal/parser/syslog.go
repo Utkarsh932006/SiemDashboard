@@ -1,4 +1,4 @@
-// Standard Syslog (RFC 3163) encodes facility and severity in the PRI header:
+// Standard Syslog (RFC 3164) encodes facility and severity in the PRI header:
 //
 // PRI = (Facility × 8) + Severity
 // Severity = PRI (mod 8)

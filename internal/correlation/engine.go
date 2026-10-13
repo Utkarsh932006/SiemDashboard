@@ -53,7 +53,7 @@ func (e *Engine) Process(event *parser.Event) []*Alert {
 
 		// Check if threshold is breached
 		if len(valid) >= rule.Threshold {
-			// Throttle: Don't alert repeadedly within same time window
+			// Throttle: Do not alert repeatedly within the same time window
 			if last, exists := e.lastAlert[key]; exists && now.Sub(last) < rule.TimeWindow {
 				continue
 			}

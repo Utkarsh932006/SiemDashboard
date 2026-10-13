@@ -3,19 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SIEM // Security Operations Console</title>
+  <title>SIEM Security Dashboard</title>
 
-  <!-- Embedded Static Assets -->
   <link rel="stylesheet" href="/static/pico.min.css">
   <script src="/static/htmx.min.js"></script>
   <script src="/static/sse.js"></script>
+  <script src="/static/chart.umd.min.js"></script>
 
   <style>
-    /* ==========================================================================
-       TACTICAL SOC THEME (Splunk / CrowdStrike / Elastic Inspired)
-       Palette: Deep Charcoal, Slate, Zinc, and High-Contrast Severity Accents.
-       NO PURPLE GRADIENTS. ZERO FLUFF.
-       ========================================================================== */
     :root {
       --bg-canvas: #090d16;
       --bg-panel: #0f172a;
@@ -28,7 +23,6 @@
       --text-muted: #94a3b8;
       --text-dim: #64748b;
 
-      /* Standard Security Severity Tokens */
       --sev-crit-bg: #450a0a;
       --sev-crit-text: #fecaca;
       --sev-crit-border: #dc2626;
@@ -68,7 +62,6 @@
       padding: 1.25rem;
     }
 
-    /* Top Navigation / Status Header */
     .soc-header {
       display: flex;
       justify-content: space-between;
@@ -219,7 +212,6 @@
       line-height: 1.3;
     }
 
-    /* KPI Metrics Cards */
     .kpi-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -258,7 +250,41 @@
     .kpi-card.high .value     { color: var(--sev-high-border); }
     .kpi-card.medium .value   { color: var(--sev-med-border); }
 
-    /* Control Toolbar (Search, Filter, Actions) */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .chart-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 0.85rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .chart-header {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chart-canvas-container {
+      position: relative;
+      height: 180px;
+      width: 100%;
+    }
+
     .toolbar-panel {
       background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
@@ -338,12 +364,12 @@
       border-color: var(--border-focus);
     }
 
-    /* Table Container */
     .table-viewport {
       background: var(--bg-panel);
       border: 1px solid var(--border-subtle);
       border-radius: 0 0 4px 4px;
       overflow-x: auto;
+      max-height: 520px;
     }
 
     table.soc-table {
@@ -365,6 +391,9 @@
       padding: 0.65rem 1rem;
       border-bottom: 1px solid var(--border-subtle);
       white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
     }
 
     table.soc-table td {
@@ -381,7 +410,6 @@
       background: var(--bg-panel-hover);
     }
 
-    /* Severity Badges (Industrial, High-Contrast) */
     .badge {
       display: inline-block;
       font-family: var(--font-mono);
@@ -424,7 +452,6 @@
       border: 1px solid var(--sev-info-border);
     }
 
-    /* Monospace IP, Time & Rule formatting */
     .cell-time {
       font-family: var(--font-mono);
       color: var(--text-dim);
@@ -440,6 +467,12 @@
       border-radius: 3px;
       border: 1px solid #1e293b;
       font-size: 0.78rem;
+      cursor: pointer;
+    }
+
+    .cell-ip:hover {
+      border-color: #3b82f6;
+      background: rgba(30, 41, 59, 0.9);
     }
 
     .cell-rule {
@@ -455,7 +488,6 @@
       word-break: break-word;
     }
 
-    /* Live Arrival Highlight Animation */
     @keyframes alertHighlight {
       0%   { background-color: rgba(220, 38, 38, 0.25); }
       100% { background-color: transparent; }
@@ -465,7 +497,6 @@
       animation: alertHighlight 1.8s ease-out forwards;
     }
 
-    /* Empty State */
     #empty-state td {
       text-align: center;
       padding: 3rem 1rem;
@@ -477,17 +508,21 @@
     tbody:has(tr:nth-child(2)) #empty-state {
       display: none;
     }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
 
   <div class="soc-layout">
     
-    <!-- Top System Header -->
     <header class="soc-header">
       <div class="soc-brand">
-        <span class="title">SIEM Core Console</span>
-        <span class="subtitle">Threat Detection & Correlation</span>
+        <span class="title">SIEM Dashboard</span>
+        <span class="subtitle">Log Ingestion & Event Correlation</span>
       </div>
 
       <div class="soc-telemetry-status">
@@ -496,6 +531,7 @@
           <span>STREAM ONLINE</span>
         </div>
         <div class="telemetry-tag">UDP :5140 LISTENER</div>
+        <div class="telemetry-tag">SQLITE STORE: ACTIVE</div>
         <div class="rules-dropdown">
           <div class="telemetry-tag interactive">
             <span>DETECTION RULES (3)</span>
@@ -529,7 +565,6 @@
       </div>
     </header>
 
-    <!-- Operational KPI Grid -->
     <section class="kpi-grid">
       <div class="kpi-card">
         <span class="label">Total Incidents</span>
@@ -549,15 +584,40 @@
       </div>
     </section>
 
-    <!-- Controls & Alert Feed Table -->
+    <section class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <span>Threat Activity Timeline</span>
+          <span style="color: var(--text-dim); font-size: 0.65rem;">Last 24 Hours</span>
+        </div>
+        <div class="chart-canvas-container">
+          <canvas id="timelineChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <span>Severity Breakdown</span>
+          <span style="color: var(--text-dim); font-size: 0.65rem;">Aggregate</span>
+        </div>
+        <div class="chart-canvas-container">
+          <canvas id="severityChart"></canvas>
+        </div>
+      </div>
+    </section>
+
     <section>
       <div class="toolbar-panel">
         <div class="search-box">
           <input 
             type="text" 
             id="searchInput" 
-            placeholder="Search by IP, Rule ID, or Payload..." 
-            onkeyup="filterTable()">
+            name="q"
+            placeholder="Search by IP, Rule ID, or Message..." 
+            hx-get="/api/alerts"
+            hx-trigger="input changed delay:250ms, search"
+            hx-target="#alertTableBody"
+            hx-include="#severityInput">
+          <input type="hidden" id="severityInput" name="severity" value="ALL">
         </div>
 
         <div class="filter-group">
@@ -569,15 +629,11 @@
 
         <div style="display: flex; gap: 0.5rem;">
           <button class="action-btn" id="pauseBtn" onclick="toggleStream()">Pause Feed</button>
-          <button class="action-btn" onclick="clearTable()">Clear</button>
+          <button class="action-btn" onclick="refreshAlerts()">Refresh</button>
         </div>
       </div>
 
       <div class="table-viewport">
-        <!-- 
-          HTMX SSE Connection:
-          Subscribes to /events/stream and prepends alert rows
-        -->
         <table class="soc-table" role="grid" hx-ext="sse" sse-connect="/events/stream">
           <thead>
             <tr>
@@ -590,12 +646,14 @@
           </thead>
           <tbody 
             id="alertTableBody"
+            hx-get="/api/alerts"
+            hx-trigger="load"
             sse-swap="alert" 
             hx-swap="afterbegin">
             
             <tr id="empty-state">
               <td colspan="5">
-                [NO ALERTS DETECTED] Awaiting Syslog telemetry on UDP port 5140...
+                No alerts detected. Waiting for incoming telemetry on UDP port 5140.
               </td>
             </tr>
 
@@ -607,19 +665,13 @@
   </div>
 
   <script>
-    // =========================================================================
-    // Tactical UX Helpers: Live KPIs, Table Filtering & Stream Controls
-    // =========================================================================
-    let totalAlerts = 0;
-    let criticalAlerts = 0;
-    let highAlerts = 0;
-    const uniqueSources = new Set();
-    let currentSeverityFilter = 'ALL';
     let isPaused = false;
+    let timelineChartInstance = null;
+    let severityChartInstance = null;
 
-    // Track incoming rows and update live KPI counters
     const tableBody = document.getElementById('alertTableBody');
     const observer = new MutationObserver((mutations) => {
+      let hasNewRow = false;
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType === 1 && node.tagName === 'TR' && node.id !== 'empty-state') {
@@ -627,79 +679,51 @@
               node.remove();
               return;
             }
-
-            totalAlerts++;
-            document.getElementById('kpi-total').textContent = totalAlerts;
-
-            // Extract severity
-            const sevBadge = node.querySelector('.badge, [class*="badge-"]');
-            if (sevBadge) {
-              const sev = sevBadge.textContent.trim().toUpperCase();
-              if (sev.includes('CRITICAL')) {
-                criticalAlerts++;
-                document.getElementById('kpi-critical').textContent = criticalAlerts;
-              } else if (sev.includes('HIGH')) {
-                highAlerts++;
-                document.getElementById('kpi-high').textContent = highAlerts;
-              }
-            }
-
-            // Extract Source IP
-            const ipCode = node.querySelector('.cell-ip, code');
-            if (ipCode) {
-              uniqueSources.add(ipCode.textContent.trim());
-              document.getElementById('kpi-sources').textContent = uniqueSources.size;
-            }
-
-            // Apply active filters to the new row
-            applyFilterToRow(node);
+            hasNewRow = true;
           }
         });
       });
+      if (hasNewRow) {
+        updateStats();
+      }
     });
 
     observer.observe(tableBody, { childList: true });
 
-    // Client-side text search across all columns
-    function filterTable() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      const rows = tableBody.getElementsByTagName('tr');
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-        if (row.id === 'empty-state') continue;
-        const text = row.innerText.toLowerCase();
-        const matchesSearch = text.includes(query);
-        const matchesSeverity = checkRowSeverity(row, currentSeverityFilter);
-
-        row.style.display = (matchesSearch && matchesSeverity) ? '' : 'none';
-      }
-    }
-
-    // Severity filter buttons
     function setSeverityFilter(sev, btn) {
-      currentSeverityFilter = sev;
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      filterTable();
+      document.getElementById('severityInput').value = sev;
+      
+      const search = document.getElementById('searchInput').value;
+      htmx.ajax('GET', `/api/alerts?severity=${encodeURIComponent(sev)}&q=${encodeURIComponent(search)}`, {
+        target: '#alertTableBody',
+        swap: 'innerHTML'
+      });
     }
 
-    function checkRowSeverity(row, filter) {
-      if (filter === 'ALL') return true;
-      const badge = row.querySelector('.badge, [class*="badge-"]');
-      return badge && badge.textContent.trim().toUpperCase() === filter;
+    function refreshAlerts() {
+      const sev = document.getElementById('severityInput').value;
+      const search = document.getElementById('searchInput').value;
+      htmx.ajax('GET', `/api/alerts?severity=${encodeURIComponent(sev)}&q=${encodeURIComponent(search)}`, {
+        target: '#alertTableBody',
+        swap: 'innerHTML'
+      });
+      updateStats();
     }
 
-    function applyFilterToRow(row) {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      const text = row.innerText.toLowerCase();
-      const matchesSearch = text.includes(query);
-      const matchesSeverity = checkRowSeverity(row, currentSeverityFilter);
-
-      row.style.display = (matchesSearch && matchesSeverity) ? '' : 'none';
+    function pivotIP(ip) {
+      const searchInput = document.getElementById('searchInput');
+      searchInput.value = ip;
+      document.getElementById('severityInput').value = 'ALL';
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.filter-btn').classList.add('active');
+      htmx.ajax('GET', `/api/alerts?q=${encodeURIComponent(ip)}`, {
+        target: '#alertTableBody',
+        swap: 'innerHTML'
+      });
     }
 
-    // Toggle Pause/Resume Live Feed
     function toggleStream() {
       isPaused = !isPaused;
       const btn = document.getElementById('pauseBtn');
@@ -714,19 +738,132 @@
       }
     }
 
-    // Clear feed
-    function clearTable() {
-      const rows = Array.from(tableBody.querySelectorAll('tr:not(#empty-state)'));
-      rows.forEach(r => r.remove());
-      totalAlerts = 0;
-      criticalAlerts = 0;
-      highAlerts = 0;
-      uniqueSources.clear();
-      document.getElementById('kpi-total').textContent = '0';
-      document.getElementById('kpi-critical').textContent = '0';
-      document.getElementById('kpi-high').textContent = '0';
-      document.getElementById('kpi-sources').textContent = '0';
+    async function updateStats() {
+      try {
+        const res = await fetch('/api/stats');
+        if (!res.ok) return;
+        const data = await res.json();
+
+        document.getElementById('kpi-total').textContent = data.total || 0;
+        document.getElementById('kpi-critical').textContent = data.critical || 0;
+        document.getElementById('kpi-high').textContent = data.high || 0;
+        document.getElementById('kpi-sources').textContent = data.top_ips ? data.top_ips.length : 0;
+
+        if (severityChartInstance) {
+          severityChartInstance.data.datasets[0].data = [
+            data.critical || 0,
+            data.high || 0,
+            data.medium || 0,
+            data.info || 0
+          ];
+          severityChartInstance.update();
+        }
+
+        if (timelineChartInstance) {
+          const hours = [];
+          const counts = [];
+          if (data.timeline && data.timeline.length > 0) {
+            data.timeline.forEach(t => {
+              hours.push(t.hour);
+              counts.push(t.count);
+            });
+          } else {
+            hours.push('Live');
+            counts.push(data.total || 0);
+          }
+          timelineChartInstance.data.labels = hours;
+          timelineChartInstance.data.datasets[0].data = counts;
+          timelineChartInstance.update();
+        }
+      } catch (err) {
+        console.error('Failed to update stats:', err);
+      }
     }
+
+    function initCharts() {
+      if (typeof Chart === 'undefined') return;
+
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.font.family = 'ui-monospace, SFMono-Regular, "JetBrains Mono", Menlo, Consolas, monospace';
+      Chart.defaults.font.size = 11;
+
+      const tlCtx = document.getElementById('timelineChart').getContext('2d');
+      timelineChartInstance = new Chart(tlCtx, {
+        type: 'bar',
+        data: {
+          labels: ['Live'],
+          datasets: [{
+            label: 'Alerts',
+            data: [0],
+            backgroundColor: '#ea580c',
+            borderRadius: 2,
+            borderSkipped: false
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              borderColor: '#334155',
+              borderWidth: 1
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false, color: '#1e293b' },
+              ticks: { color: '#64748b' }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: '#161f30' },
+              ticks: { precision: 0, color: '#64748b' }
+            }
+          }
+        }
+      });
+
+      const sevCtx = document.getElementById('severityChart').getContext('2d');
+      severityChartInstance = new Chart(sevCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Critical', 'High', 'Medium', 'Info'],
+          datasets: [{
+            data: [0, 0, 0, 0],
+            backgroundColor: ['#dc2626', '#ea580c', '#ca8a04', '#475569'],
+            borderColor: '#0f172a',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: '72%',
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 10,
+                padding: 10,
+                color: '#cbd5e1'
+              }
+            },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              borderColor: '#334155',
+              borderWidth: 1
+            }
+          }
+        }
+      });
+
+      updateStats();
+      setInterval(updateStats, 6000);
+    }
+
+    document.addEventListener('DOMContentLoaded', initCharts);
   </script>
 
 </body>

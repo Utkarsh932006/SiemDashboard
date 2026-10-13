@@ -6,41 +6,50 @@ import (
 	"net"
 )
 
-// Encapsulation of Sender's IP addr and recieved packet
+// RawLog encapsulates a received packet payload and the sender's network address.
 type RawLog struct {
 	Data     string
 	RemoteIP string
 }
 
-// UDP socket listener
-type Reciever struct {
+// Receiver manages a UDP socket listener for syslog datagrams.
+type Receiver struct {
 	addr string
 	out  chan RawLog
 	conn *net.UDPConn
 }
 
-// Creates a new UDP syslog listener on the specified address
-func NewReciever(addr string, bufferSize int) *Reciever {
-	return &Reciever{
+// Reciever is a type alias for Receiver.
+type Reciever = Receiver
+
+// NewReceiver creates a new UDP syslog listener on the specified address.
+func NewReceiver(addr string, bufferSize int) *Receiver {
+	return &Receiver{
 		addr: addr,
 		out:  make(chan RawLog, bufferSize),
 	}
 }
 
-// Returns the recieve-only channel yielding incoming raw logs
-func (r *Reciever) Channel() <-chan RawLog {
+// NewReciever is an alias for NewReceiver.
+func NewReciever(addr string, bufferSize int) *Receiver {
+	return NewReceiver(addr, bufferSize)
+}
+
+// Channel returns the receive-only channel yielding incoming raw logs.
+func (r *Receiver) Channel() <-chan RawLog {
 	return r.out
 }
 
-func (r *Reciever) Start(ctx context.Context) error {
-	udpaddr, err := net.ResolveUDPAddr("udp", r.addr)
+// Start begins listening on the UDP port. It terminates when ctx is cancelled.
+func (r *Receiver) Start(ctx context.Context) error {
+	udpAddr, err := net.ResolveUDPAddr("udp", r.addr)
 	if err != nil {
 		return fmt.Errorf("resolving udp address: %w", err)
 	}
 
-	conn, err := net.ListenUDP("udp", udpaddr)
+	conn, err := net.ListenUDP("udp", udpAddr)
 	if err != nil {
-		return fmt.Errorf("listening to udp: %w", err)
+		return fmt.Errorf("listening on udp: %w", err)
 	}
 	r.conn = conn
 
@@ -53,7 +62,6 @@ func (r *Reciever) Start(ctx context.Context) error {
 	for {
 		n, remoteAddr, err := r.conn.ReadFrom(buf)
 		if err != nil {
-			// Check if closed intentionally
 			select {
 			case <-ctx.Done():
 				close(r.out)
@@ -63,14 +71,14 @@ func (r *Reciever) Start(ctx context.Context) error {
 			}
 		}
 
-		// Extracts IP without port
-		host, _, _ := net.SplitHostPort(remoteAddr.String())
+		host, _, err := net.SplitHostPort(remoteAddr.String())
+		if err != nil {
+			host = remoteAddr.String()
+		}
 
-		// Non-blocking write to channel to avoid stalling the UDP listener
 		select {
 		case r.out <- RawLog{Data: string(buf[:n]), RemoteIP: host}:
 		default:
-			// Buffer full, drop to preserve latency
 		}
 	}
 }

@@ -1,0 +1,15 @@
+# Compiled binaries
+siem
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# SQLite databases
+*.db
+*.db-wal
+*.db-shm
+
+# Test artifacts
+*.test
