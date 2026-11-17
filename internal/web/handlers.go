@@ -3,6 +3,7 @@ package web
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/Utkarsh932006/SiemDashboard/internal/correlation"
 	"github.com/Utkarsh932006/SiemDashboard/internal/storage"
 )
+
+const maxAlertQueryLimit = 500
 
 // FormatAlertHTML formats an Alert as a table row HTML fragment.
 func FormatAlertHTML(alert *correlation.Alert) string {
@@ -26,14 +29,14 @@ func FormatAlertHTML(alert *correlation.Alert) string {
 	}
 
 	return fmt.Sprintf(
-		`<tr class="new-row"><td class="cell-time">%s</td><td><span class="badge %s">%s</span></td><td><code class="cell-ip" onclick="pivotIP('%s')" title="Filter by this IP">%s</code></td><td class="cell-rule">%s</td><td class="cell-msg">%s</td></tr>`,
+		`<tr class="new-row"><td class="cell-time">%s</td><td><span class="badge %s">%s</span></td><td><button class="cell-ip" type="button" data-pivot-ip="%s" title="Filter by this IP">%s</button></td><td class="cell-rule">%s</td><td class="cell-msg">%s</td></tr>`,
 		alert.Timestamp.Format("15:04:05"),
 		badgeClass,
-		alert.Severity,
-		alert.SourceIP,
-		alert.SourceIP,
-		alert.RuleID,
-		alert.Message,
+		html.EscapeString(alert.Severity),
+		html.EscapeString(alert.SourceIP),
+		html.EscapeString(alert.SourceIP),
+		html.EscapeString(alert.RuleID),
+		html.EscapeString(alert.Message),
 	)
 }
 
@@ -56,7 +59,7 @@ func (s *Server) handleAlertsQuery(w http.ResponseWriter, r *http.Request) {
 	ip := strings.TrimSpace(q.Get("ip"))
 	limit := 100
 	if l := q.Get("limit"); l != "" {
-		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 && parsed <= maxAlertQueryLimit {
 			limit = parsed
 		}
 	}

@@ -10,6 +10,7 @@ import (
 )
 
 const dbTimeFormat = "2006-01-02 15:04:05"
+const maxQueryLimit = 500
 
 // InsertEvent persists a normalized event to the database.
 func (s *Store) InsertEvent(e *parser.Event) error {
@@ -71,7 +72,11 @@ func (s *Store) QueryAlerts(f EventFilter) ([]*correlation.Alert, error) {
 	if limit <= 0 {
 		limit = 200
 	}
-	query += fmt.Sprintf(" LIMIT %d", limit)
+	if limit > maxQueryLimit {
+		limit = maxQueryLimit
+	}
+	query += " LIMIT ?"
+	args = append(args, limit)
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {

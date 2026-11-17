@@ -690,6 +690,13 @@
 
     observer.observe(tableBody, { childList: true });
 
+    tableBody.addEventListener('click', (event) => {
+      const pivot = event.target.closest('[data-pivot-ip]');
+      if (pivot) {
+        pivotIP(pivot.dataset.pivotIp);
+      }
+    });
+
     function setSeverityFilter(sev, btn) {
       document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');

@@ -9,17 +9,29 @@ import (
 )
 
 type Engine struct {
-	mu        sync.Mutex
-	rules     []Rule
-	windows   map[string][]time.Time // key: "ruleID:sourceIP" -> timestamps
-	lastAlert map[string]time.Time   // key: "ruleID:sourceIP" -> last alert time (throttling)
+	mu          sync.Mutex
+	rules       []Rule
+	windows     map[string][]time.Time // key: "ruleID:sourceIP" -> receipt timestamps
+	lastAlert   map[string]time.Time   // key: "ruleID:sourceIP" -> last alert time (throttling)
+	lastSeen    map[string]time.Time
+	maxWindow   time.Duration
+	nextCleanup time.Time
 }
 
 func NewEngine(rules []Rule) *Engine {
+	maxWindow := time.Minute
+	for _, rule := range rules {
+		if rule.TimeWindow > maxWindow {
+			maxWindow = rule.TimeWindow
+		}
+	}
+
 	return &Engine{
 		rules:     rules,
 		windows:   make(map[string][]time.Time),
 		lastAlert: make(map[string]time.Time),
+		lastSeen:  make(map[string]time.Time),
+		maxWindow: maxWindow,
 	}
 }
 
@@ -30,13 +42,21 @@ func (e *Engine) Process(event *parser.Event) []*Alert {
 	defer e.mu.Unlock()
 
 	var alerts []*Alert
-	now := event.Timestamp
+	// Detection windows are based on receipt time, rather than sender-controlled
+	// syslog timestamps. This keeps out-of-order and future-dated messages from
+	// creating false positives or suppressing legitimate alerts.
+	now := time.Now()
+	if !e.nextCleanup.After(now) {
+		e.purgeExpired(now)
+		e.nextCleanup = now.Add(e.maxWindow)
+	}
 
 	for _, rule := range e.rules {
 		if rule.EventType != event.EventType {
 			continue
 		}
 		key := fmt.Sprintf("%s:%s", rule.ID, event.SourceIP)
+		e.lastSeen[key] = now
 
 		// Append current event timestamp
 		e.windows[key] = append(e.windows[key], now)
@@ -71,4 +91,14 @@ func (e *Engine) Process(event *parser.Event) []*Alert {
 		}
 	}
 	return alerts
+}
+
+func (e *Engine) purgeExpired(now time.Time) {
+	for key, seen := range e.lastSeen {
+		if now.Sub(seen) > e.maxWindow {
+			delete(e.windows, key)
+			delete(e.lastAlert, key)
+			delete(e.lastSeen, key)
+		}
+	}
 }

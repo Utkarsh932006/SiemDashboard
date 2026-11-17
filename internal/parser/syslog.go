@@ -65,12 +65,17 @@ func Parse(raw string, remoteIP string) *Event {
 		event.Message = msgStr
 		// timestamp is optional so try to parse timestamp only if it is present
 		if timeStr != "" {
-			// RFC 3164 time format doesn't have years; so we default to current year
+			// RFC 3164 time format doesn't have years. Prefer the current year,
+			// but treat a date more than a day in the future as last year's log.
 			parsedTime, err := time.Parse("Jan _2 15:04:05", timeStr)
 			if err == nil {
 				now := time.Now()
-				event.Timestamp = time.Date(now.Year(), parsedTime.Month(), parsedTime.Day(),
+				candidate := time.Date(now.Year(), parsedTime.Month(), parsedTime.Day(),
 					parsedTime.Hour(), parsedTime.Minute(), parsedTime.Second(), 0, time.Local)
+				if candidate.After(now.Add(24 * time.Hour)) {
+					candidate = candidate.AddDate(-1, 0, 0)
+				}
+				event.Timestamp = candidate
 			}
 		}
 	}

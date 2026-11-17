@@ -21,11 +21,13 @@ func New(dbPath string) (*Store, error) {
 
 	// Enable WAL mode for concurrent reads during writes
 	if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("setting WAL mode: %w", err)
 	}
 
 	s := &Store{db: db}
 	if err := s.migrate(); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("running migrations: %w", err)
 	}
 
