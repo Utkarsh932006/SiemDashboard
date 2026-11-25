@@ -311,13 +311,28 @@
       color: var(--text-main);
       font-family: var(--font-mono);
       font-size: 0.8rem;
-      padding: 0.45rem 0.75rem;
+      padding: 0.45rem 2rem 0.45rem 0.75rem;
       margin: 0;
       outline: none;
     }
 
     .search-box input:focus {
       border-color: var(--border-focus);
+    }
+
+    .search-kbd-hint {
+      position: absolute;
+      right: 0.65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-focus);
+      border-radius: 2px;
+      padding: 0.05rem 0.35rem;
+      color: var(--text-dim);
+      pointer-events: none;
     }
 
     .filter-group {
@@ -454,6 +469,7 @@
 
     .cell-time {
       font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
       color: var(--text-dim);
       white-space: nowrap;
       font-size: 0.78rem;
@@ -461,13 +477,15 @@
 
     .cell-ip {
       font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
       color: #93c5fd;
       background: rgba(30, 41, 59, 0.6);
-      padding: 0.15rem 0.4rem;
+      padding: 0.15rem 0.45rem;
       border-radius: 3px;
       border: 1px solid #1e293b;
       font-size: 0.78rem;
       cursor: pointer;
+      display: inline-block;
     }
 
     .cell-ip:hover {
@@ -480,12 +498,35 @@
       font-size: 0.76rem;
       color: var(--text-muted);
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .cell-msg {
       color: var(--text-main);
       font-size: 0.8rem;
       word-break: break-word;
+    }
+
+    .alert-row {
+      cursor: pointer;
+    }
+
+    .alert-row:hover td {
+      background: var(--bg-panel-hover);
+    }
+
+    .kbd-shortcut {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-focus);
+      border-radius: 3px;
+      padding: 0.1rem 0.35rem;
+      color: var(--text-muted);
+      margin-left: 0.35rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      pointer-events: none;
     }
 
     @keyframes alertHighlight {
@@ -509,9 +550,197 @@
       display: none;
     }
 
+    .empty-state-cell {
+      text-align: center;
+      padding: 3rem 1.5rem !important;
+    }
+
+    .empty-state-card {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .empty-pulse-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--status-active);
+      box-shadow: 0 0 10px var(--status-active);
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.35; transform: scale(0.85); }
+    }
+
+    .empty-state-title {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-main);
+      text-transform: uppercase;
+    }
+
+    .empty-state-subtitle {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    .empty-state-tip {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      padding: 0.4rem 0.75rem;
+      border-radius: 4px;
+      word-break: break-all;
+    }
+
+    .empty-state-tip code {
+      color: #93c5fd;
+      background: transparent;
+      padding: 0;
+    }
+
+    /* Native HTML5 Dialog & Forensics Inspector (minimal-web) */
+    dialog {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-focus);
+      border-radius: 6px;
+      color: var(--text-main);
+      max-width: 650px;
+      width: 92%;
+      padding: 0;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.8);
+      margin: auto;
+    }
+
+    dialog::backdrop {
+      background: rgba(5, 8, 15, 0.75);
+      backdrop-filter: blur(2px);
+    }
+
+    dialog article {
+      margin: 0;
+      background: transparent;
+      padding: 1.25rem 1.5rem;
+    }
+
+    dialog header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    dialog footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.6rem;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 0.85rem;
+      margin-top: 1.25rem;
+    }
+
+    dialog .close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      line-height: 1;
+      border-radius: 3px;
+    }
+
+    dialog .close-btn:hover {
+      color: var(--text-main);
+      background: var(--bg-canvas);
+    }
+
+    .modal-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .modal-meta-item {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 0.55rem 0.75rem;
+    }
+
+    .modal-meta-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-bottom: 0.25rem;
+    }
+
+    .modal-meta-val {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .modal-msg-box {
+      background: var(--bg-canvas);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.45;
+      word-break: break-word;
+      color: #e2e8f0;
+      margin-bottom: 0.5rem;
+    }
+
+    /* Ephemeral Toast Notification */
+    .soc-toast {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-focus);
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      padding: 0.55rem 0.95rem;
+      border-radius: 4px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1000;
+      animation: toastSlide 0.18s ease-out;
+    }
+
+    @keyframes toastSlide {
+      from { transform: translateY(12px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
     @media (max-width: 900px) {
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
       .charts-grid { grid-template-columns: 1fr; }
+      .modal-meta-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -532,6 +761,10 @@
         </div>
         <div class="telemetry-tag">UDP :5140 LISTENER</div>
         <div class="telemetry-tag">SQLITE STORE: ACTIVE</div>
+        <button class="telemetry-tag interactive" onclick="openShortcutsModal()" title="Keyboard Shortcuts Guide [ ? ]" type="button">
+          <span>SHORTCUTS</span>
+          <span class="kbd-shortcut" style="margin-left: 0.2rem;">?</span>
+        </button>
         <div class="rules-dropdown">
           <div class="telemetry-tag interactive">
             <span>DETECTION RULES (3)</span>
@@ -551,7 +784,7 @@
                 <span class="rule-title">Port Scan Activity</span>
                 <span class="badge badge-high">HIGH</span>
               </div>
-              <div class="rule-desc">10 PORT_SCAN probes from same IP within 30s</div>
+              <div class="rule-desc">5 PORT_SCAN probes from same IP within 30s</div>
             </div>
             <div class="rule-item">
               <div class="rule-item-top">
@@ -618,6 +851,7 @@
             hx-target="#alertTableBody"
             hx-include="#severityInput">
           <input type="hidden" id="severityInput" name="severity" value="ALL">
+          <span class="search-kbd-hint">/</span>
         </div>
 
         <div class="filter-group">
@@ -627,9 +861,10 @@
           <button class="filter-btn" onclick="setSeverityFilter('MEDIUM', this)">Medium</button>
         </div>
 
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="action-btn" id="pauseBtn" onclick="toggleStream()">Pause Feed</button>
-          <button class="action-btn" onclick="refreshAlerts()">Refresh</button>
+        <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <button class="action-btn" id="pauseBtn" onclick="toggleStream()" title="Hotkey: P">Pause Feed <span class="kbd-shortcut">P</span></button>
+          <button class="action-btn" onclick="clearFeed()" title="Hotkey: C">Clear View <span class="kbd-shortcut">C</span></button>
+          <button class="action-btn" onclick="refreshAlerts()" title="Hotkey: R">Refresh <span class="kbd-shortcut">R</span></button>
         </div>
       </div>
 
@@ -637,9 +872,9 @@
         <table class="soc-table" role="grid" hx-ext="sse" sse-connect="/events/stream">
           <thead>
             <tr>
-              <th style="width: 95px;">Timestamp</th>
-              <th style="width: 90px;">Severity</th>
-              <th style="width: 150px;">Source IP</th>
+              <th style="width: 105px;">Timestamp</th>
+              <th style="width: 95px;">Severity</th>
+              <th style="width: 155px;">Source IP</th>
               <th style="width: 220px;">Detection Rule</th>
               <th>Incident Summary</th>
             </tr>
@@ -652,8 +887,13 @@
             hx-swap="afterbegin">
             
             <tr id="empty-state">
-              <td colspan="5">
-                No alerts detected. Waiting for incoming telemetry on UDP port 5140.
+              <td colspan="5" class="empty-state-cell">
+                <div class="empty-state-card">
+                  <div class="empty-pulse-dot"></div>
+                  <div class="empty-state-title">Awaiting Telemetry Stream</div>
+                  <div class="empty-state-subtitle">Listening for RFC 3164 Syslog datagrams on UDP and TCP port 5140.</div>
+                  <div class="empty-state-tip">Simulate attack: <code>logger -n 127.0.0.1 -P 5140 -d "Failed password for root from 10.0.0.5"</code></div>
+                </div>
               </td>
             </tr>
 
@@ -661,6 +901,102 @@
         </table>
       </div>
     </section>
+
+    <!-- Incident Detail Forensic Modal (Native HTML5 <dialog>) -->
+    <dialog id="incidentModal">
+      <article>
+        <header>
+          <div style="display: flex; align-items: center; gap: 0.65rem;">
+            <span id="modalSevBadge" class="badge">SEV</span>
+            <strong id="modalRuleName" style="font-family: var(--font-mono); font-size: 0.95rem;">Incident Forensics</strong>
+          </div>
+          <button type="button" class="close-btn" onclick="closeIncidentModal()" aria-label="Close">✕</button>
+        </header>
+        <div class="modal-meta-grid">
+          <div class="modal-meta-item">
+            <div class="modal-meta-label">Detection Rule ID</div>
+            <div class="modal-meta-val" id="modalRuleId">RULE_ID</div>
+          </div>
+          <div class="modal-meta-item">
+            <div class="modal-meta-label">Event Timestamp</div>
+            <div class="modal-meta-val" id="modalTimestamp">2026-00-00 00:00:00</div>
+          </div>
+          <div class="modal-meta-item">
+            <div class="modal-meta-label">Attacker Source IP</div>
+            <div class="modal-meta-val" id="modalSourceIp">0.0.0.0</div>
+          </div>
+          <div class="modal-meta-item">
+            <div class="modal-meta-label">Threat Severity</div>
+            <div class="modal-meta-val" id="modalSeverity">CRITICAL</div>
+          </div>
+        </div>
+        <div style="margin-bottom: 0.35rem;">
+          <span class="modal-meta-label">Incident Summary / Analysis</span>
+        </div>
+        <div class="modal-msg-box" id="modalMessage">--</div>
+        <footer>
+          <button type="button" class="action-btn" onclick="copyModalIP()">Copy IP</button>
+          <button type="button" class="action-btn" onclick="copyModalJSON()">Copy JSON</button>
+          <button type="button" class="filter-btn active" onclick="pivotModalIP()">Pivot on Source IP</button>
+          <button type="button" class="action-btn" onclick="closeIncidentModal()">Close [Esc]</button>
+        </footer>
+      </article>
+    </dialog>
+
+    <!-- Keyboard Shortcuts Modal (Native HTML5 <dialog>) -->
+    <dialog id="shortcutsModal">
+      <article>
+        <header>
+          <strong style="font-family: var(--font-mono); font-size: 0.9rem;">SOC Console Keyboard Ergonomics</strong>
+          <button type="button" class="close-btn" onclick="closeShortcutsModal()" aria-label="Close">✕</button>
+        </header>
+        <table style="width: 100%; font-family: var(--font-mono); font-size: 0.8rem; margin: 0;">
+          <tbody>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">/</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Focus Quick Search Filter</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">Esc</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Reset Search &amp; Filters / Close Modals</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">P</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Pause / Resume Real-Time SSE Stream</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">C</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Clear Alert Table (Client View)</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">R</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Refresh Alerts &amp; Statistics</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">?</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Show Keyboard Shortcut Reference</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">Click Row</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Inspect Incident Forensics &amp; Details</td>
+            </tr>
+            <tr>
+              <td style="padding: 0.4rem 0;"><span class="kbd-shortcut" style="margin-left: 0;">Alt + Click IP</span></td>
+              <td style="padding: 0.4rem 0; color: var(--text-main);">Copy Source IP to Clipboard</td>
+            </tr>
+          </tbody>
+        </table>
+        <footer>
+          <button type="button" class="action-btn" onclick="closeShortcutsModal()">Done [Esc]</button>
+        </footer>
+      </article>
+    </dialog>
+
+    <!-- Ephemeral Toast Notification -->
+    <div id="socToast" class="soc-toast">
+      <span style="color: var(--status-active);">✔</span>
+      <span id="socToastText">Notification</span>
+    </div>
 
   </div>
 
@@ -693,7 +1029,190 @@
     tableBody.addEventListener('click', (event) => {
       const pivot = event.target.closest('[data-pivot-ip]');
       if (pivot) {
+        event.stopPropagation();
+        if (event.altKey) {
+          copyToClipboard(pivot.dataset.pivotIp, `Copied IP ${pivot.dataset.pivotIp}`);
+          return;
+        }
         pivotIP(pivot.dataset.pivotIp);
+        return;
+      }
+
+      const row = event.target.closest('.alert-row');
+      if (row) {
+        openIncidentModal(row);
+      }
+    });
+
+    let currentModalData = null;
+
+    function openIncidentModal(row) {
+      const modal = document.getElementById('incidentModal');
+      if (!modal) return;
+
+      const d = row.dataset;
+      currentModalData = {
+        time: d.time || '',
+        severity: d.severity || 'INFO',
+        ip: d.ip || '0.0.0.0',
+        ruleId: d.ruleId || 'N/A',
+        ruleName: d.ruleName || 'Incident Forensics',
+        msg: d.msg || ''
+      };
+
+      document.getElementById('modalRuleName').textContent = currentModalData.ruleName;
+      document.getElementById('modalRuleId').textContent = currentModalData.ruleId;
+      document.getElementById('modalTimestamp').textContent = currentModalData.time;
+      document.getElementById('modalSourceIp').textContent = currentModalData.ip;
+      document.getElementById('modalSeverity').textContent = currentModalData.severity;
+      document.getElementById('modalMessage').textContent = currentModalData.msg;
+
+      const badge = document.getElementById('modalSevBadge');
+      badge.textContent = currentModalData.severity;
+      badge.className = 'badge';
+      switch (currentModalData.severity.toUpperCase()) {
+        case 'CRITICAL': badge.classList.add('badge-critical'); break;
+        case 'HIGH':     badge.classList.add('badge-high'); break;
+        case 'MEDIUM':   badge.classList.add('badge-medium'); break;
+        case 'LOW':      badge.classList.add('badge-low'); break;
+        default:         badge.classList.add('badge-info'); break;
+      }
+
+      modal.showModal();
+    }
+
+    function closeIncidentModal() {
+      const modal = document.getElementById('incidentModal');
+      if (modal && modal.open) modal.close();
+    }
+
+    function openShortcutsModal() {
+      const modal = document.getElementById('shortcutsModal');
+      if (modal) modal.showModal();
+    }
+
+    function closeShortcutsModal() {
+      const modal = document.getElementById('shortcutsModal');
+      if (modal && modal.open) modal.close();
+    }
+
+    function copyModalIP() {
+      if (currentModalData && currentModalData.ip) {
+        copyToClipboard(currentModalData.ip, `Copied IP ${currentModalData.ip}`);
+      }
+    }
+
+    function copyModalJSON() {
+      if (currentModalData) {
+        copyToClipboard(JSON.stringify(currentModalData, null, 2), 'Copied incident JSON payload');
+      }
+    }
+
+    function pivotModalIP() {
+      if (currentModalData && currentModalData.ip) {
+        closeIncidentModal();
+        pivotIP(currentModalData.ip);
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('socToast');
+      const text = document.getElementById('socToastText');
+      if (!toast || !text) return;
+
+      text.textContent = msg;
+      toast.style.display = 'inline-flex';
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2000);
+    }
+
+    function copyToClipboard(text, successMsg) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast(successMsg || 'Copied to clipboard');
+        }).catch(() => fallbackCopy(text, successMsg));
+      } else {
+        fallbackCopy(text, successMsg);
+      }
+    }
+
+    function fallbackCopy(text, successMsg) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg || 'Copied to clipboard');
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+      document.body.removeChild(ta);
+    }
+
+    function clearFeed() {
+      const tbody = document.getElementById('alertTableBody');
+      tbody.innerHTML = `
+        <tr id="empty-state">
+          <td colspan="5" class="empty-state-cell">
+            <div class="empty-state-card">
+              <div class="empty-pulse-dot"></div>
+              <div class="empty-state-title">Alert Feed Cleared</div>
+              <div class="empty-state-subtitle">Incoming security events will appear here in real time.</div>
+            </div>
+          </td>
+        </tr>`;
+      showToast('Client table view cleared');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+      const isTyping = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select';
+
+      if (e.key === 'Escape') {
+        const incModal = document.getElementById('incidentModal');
+        const scModal = document.getElementById('shortcutsModal');
+        if (incModal && incModal.open) { incModal.close(); return; }
+        if (scModal && scModal.open) { scModal.close(); return; }
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput.value !== '' || document.getElementById('severityInput').value !== 'ALL') {
+          searchInput.value = '';
+          searchInput.blur();
+          document.getElementById('severityInput').value = 'ALL';
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          document.querySelector('.filter-btn').classList.add('active');
+          htmx.ajax('GET', '/api/alerts', { target: '#alertTableBody', swap: 'innerHTML' });
+          showToast('Search and filters reset');
+        }
+        return;
+      }
+
+      if (isTyping) return;
+
+      if (e.key === '/') {
+        e.preventDefault();
+        const s = document.getElementById('searchInput');
+        s.focus();
+        s.select();
+      } else if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        toggleStream();
+      } else if (e.key === 'c' || e.key === 'C') {
+        e.preventDefault();
+        clearFeed();
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault();
+        refreshAlerts();
+      } else if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        e.preventDefault();
+        openShortcutsModal();
       }
     });
 

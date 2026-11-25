@@ -122,7 +122,7 @@ func classifySecurityEvent(e *Event) {
 		e.EventType = "SUDO_EXEC"
 		e.Severity = SeverityMedium
 
-	case strings.Contains(lower, "port scan") || strings.Contains(lower, "syn flood"):
+	case strings.Contains(lower, "port scan") || strings.Contains(lower, "syn flood") || (strings.Contains(lower, "dpt=") && (strings.Contains(lower, "block") || strings.Contains(lower, "drop") || strings.Contains(lower, "reject"))):
 		e.EventType = "PORT_SCAN"
 		e.Severity = SeverityHigh
 

@@ -39,7 +39,7 @@ func DefaultRules() []Rule {
 			ID:          "RULE_PORT_SCAN",
 			Name:        "Port Scan Activity",
 			EventType:   "PORT_SCAN",
-			Threshold:   10,
+			Threshold:   5,
 			TimeWindow:  30 * time.Second,
 			Severity:    "HIGH",
 			Description: "Multiple port scan probes detected within 30s",

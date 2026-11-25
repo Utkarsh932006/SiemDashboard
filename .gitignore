@@ -1,5 +1,6 @@
 # Compiled binaries
 siem
+main
 *.exe
 *.exe~
 *.dll

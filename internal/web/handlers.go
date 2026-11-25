@@ -28,8 +28,19 @@ func FormatAlertHTML(alert *correlation.Alert) string {
 		badgeClass = "badge-low"
 	}
 
+	ruleName := alert.RuleName
+	if ruleName == "" {
+		ruleName = alert.RuleID
+	}
+
 	return fmt.Sprintf(
-		`<tr class="new-row"><td class="cell-time">%s</td><td><span class="badge %s">%s</span></td><td><button class="cell-ip" type="button" data-pivot-ip="%s" title="Filter by this IP">%s</button></td><td class="cell-rule">%s</td><td class="cell-msg">%s</td></tr>`,
+		`<tr class="new-row alert-row" data-time="%s" data-severity="%s" data-ip="%s" data-rule-id="%s" data-rule-name="%s" data-msg="%s"><td class="cell-time">%s</td><td><span class="badge %s">%s</span></td><td><button class="cell-ip" type="button" data-pivot-ip="%s" title="Click to filter, Alt+Click to copy">%s</button></td><td class="cell-rule">%s</td><td class="cell-msg">%s</td></tr>`,
+		alert.Timestamp.Format("2006-01-02 15:04:05"),
+		html.EscapeString(alert.Severity),
+		html.EscapeString(alert.SourceIP),
+		html.EscapeString(alert.RuleID),
+		html.EscapeString(ruleName),
+		html.EscapeString(alert.Message),
 		alert.Timestamp.Format("15:04:05"),
 		badgeClass,
 		html.EscapeString(alert.Severity),
